@@ -40,6 +40,11 @@ static void sensor_task(void *arg)
             ESP_LOGI(TAG, "sensor warming up, skipping");
             continue;
         }
+        if (ret == ESP_ERR_INVALID_STATE)
+        {
+            ESP_LOGI(TAG, "T=%.2f°C H=%.2f%% (ENS160 not ready)", data.temperature, data.humidity);
+            continue;
+        }
         if (ret != ESP_OK)
         {
             ESP_LOGW(TAG, "sensor read failed: %s", esp_err_to_name(ret));

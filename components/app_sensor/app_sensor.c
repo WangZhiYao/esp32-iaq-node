@@ -51,7 +51,16 @@ esp_err_t app_sensor_read(sensor_data_t *out)
     ens160_data_t ens;
     ret = ens160_read(s_ens160, &ens);
     if (ret == ESP_ERR_NOT_FINISHED) {
-        return ret; // still warming up, caller will retry next cycle
+        return ret;
+    }
+    // validity not normal yet — fill T/H so caller can print them, but signal not ready
+    if (ret == ESP_ERR_INVALID_STATE) {
+        out->temperature = aht.temperature;
+        out->humidity    = aht.humidity;
+        out->eco2        = 0;
+        out->tvoc        = 0;
+        out->aqi         = 0;
+        return ESP_ERR_INVALID_STATE;
     }
     ESP_RETURN_ON_ERROR(ret, TAG, "ens160 read failed");
 

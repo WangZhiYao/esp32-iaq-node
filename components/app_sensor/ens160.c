@@ -112,7 +112,8 @@ esp_err_t ens160_read(i2c_master_dev_handle_t handle, ens160_data_t *out)
     if (validity != STATUS_NORMAL) {
         const char *phase = (validity == STATUS_WARMUP)  ? "warm-up"  :
                             (validity == STATUS_INITIAL) ? "initial start-up" : "invalid";
-        ESP_LOGW(TAG, "validity: %s (data still read)", phase);
+        ESP_LOGW(TAG, "validity: %s, skipping data", phase);
+        return ESP_ERR_INVALID_STATE;
     }
 
     // Read all data registers in one transaction (0x21..0x27, 7 bytes)
@@ -126,6 +127,10 @@ esp_err_t ens160_read(i2c_master_dev_handle_t handle, ens160_data_t *out)
     out->aqi  = buf[0] & 0x07;
     out->tvoc = (uint16_t)(buf[2] << 8 | buf[1]);
     out->eco2 = (uint16_t)(buf[4] << 8 | buf[3]);
+
+    if (out->eco2 == 0 && out->tvoc == 0 && out->aqi == 0) {
+        return ESP_ERR_INVALID_STATE;
+    }
 
     return ESP_OK;
 }
