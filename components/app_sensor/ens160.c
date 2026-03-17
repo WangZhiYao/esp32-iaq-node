@@ -18,11 +18,6 @@
 #define REG_DATA_TVOC   0x22
 #define REG_DATA_ECO2   0x24
 
-#define OPMODE_DEEP_SLEEP 0x00
-#define OPMODE_IDLE       0x01
-#define OPMODE_STANDARD   0x02
-#define OPMODE_RESET      0xF0
-
 // DATA_STATUS bits (datasheet §10.6)
 #define STATUS_NEWDAT     (1 << 1)  // new data available in DATA_x registers
 #define STATUS_VALIDITY   (0x0C)    // validity flag bits[3:2]
@@ -54,12 +49,10 @@ esp_err_t ens160_init(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t *out_
     ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(bus, &cfg, out_handle), TAG, "add device failed");
 
     // Reset to power-on state: write RESET opmode, wait 10ms, then go to IDLE
-    uint8_t mode = OPMODE_RESET;
-    ESP_RETURN_ON_ERROR(ens160_write_reg(*out_handle, REG_OPMODE, &mode, 1), TAG, "reset failed");
+    ESP_RETURN_ON_ERROR(ens160_set_opmode(*out_handle, OPMODE_RESET), TAG, "reset failed");
     vTaskDelay(pdMS_TO_TICKS(ENS160_RESET_DELAY_MS));
 
-    mode = OPMODE_IDLE;
-    ESP_RETURN_ON_ERROR(ens160_write_reg(*out_handle, REG_OPMODE, &mode, 1), TAG, "set idle failed");
+    ESP_RETURN_ON_ERROR(ens160_set_opmode(*out_handle, OPMODE_IDLE), TAG, "set idle failed");
 
     // Verify part ID after reset (should be 0x0160)
     uint8_t id_buf[2];
@@ -71,8 +64,7 @@ esp_err_t ens160_init(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t *out_
     }
 
     // Switch to standard measurement mode (1 second per sample)
-    mode = OPMODE_STANDARD;
-    ESP_RETURN_ON_ERROR(ens160_write_reg(*out_handle, REG_OPMODE, &mode, 1), TAG, "set standard failed");
+    ESP_RETURN_ON_ERROR(ens160_set_opmode(*out_handle, OPMODE_STANDARD), TAG, "set standard failed");
 
     // Allow sensor to stabilize (first readings may be in "warm-up" state)
     vTaskDelay(pdMS_TO_TICKS(50));
@@ -92,6 +84,11 @@ esp_err_t ens160_set_temp_hum(i2c_master_dev_handle_t handle, float temperature,
         h_raw & 0xFF, (h_raw >> 8) & 0xFF,
     };
     return ens160_write_reg(handle, REG_TEMP_IN, buf, 4);
+}
+
+esp_err_t ens160_set_opmode(i2c_master_dev_handle_t handle, uint8_t mode)
+{
+    return ens160_write_reg(handle, REG_OPMODE, &mode, 1);
 }
 
 esp_err_t ens160_read(i2c_master_dev_handle_t handle, ens160_data_t *out)
