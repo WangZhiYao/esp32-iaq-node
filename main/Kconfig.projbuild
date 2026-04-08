@@ -37,6 +37,24 @@ menu "Project Configuration"
             help
               Interval in seconds between sensor readings (ENS160 + AHT21).
 
+        config SENSOR_TEMP_COMP_X100
+            int "Temperature Compensation (x100 °C)"
+            default 0
+            range -5000 5000
+            help
+              Manual temperature compensation value in hundredths of °C.
+              For example, set to -150 to subtract 1.50 °C from the AHT21 reading.
+              Useful to counteract the baking effect from nearby heat sources (e.g. ENS160).
+
+        config SENSOR_HUM_COMP_X100
+            int "Humidity Compensation (x100 %RH)"
+            default 0
+            range -5000 5000
+            help
+              Manual humidity compensation value in hundredths of %RH.
+              For example, set to 200 to add 2.00 %RH to the AHT21 reading.
+              Useful to counteract the baking effect from nearby heat sources (e.g. ENS160).
+
     endmenu
 
 endmenu

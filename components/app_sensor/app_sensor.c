@@ -42,6 +42,10 @@ esp_err_t app_sensor_read(sensor_data_t *out)
     aht21_data_t aht;
     ESP_RETURN_ON_ERROR(aht21_read(s_aht21, &aht), TAG, "aht21 read failed");
 
+    // Apply manual compensation (counteract baking effect from ENS160 hotplate)
+    aht.temperature += CONFIG_SENSOR_TEMP_COMP_X100 / 100.0f;
+    aht.humidity    += CONFIG_SENSOR_HUM_COMP_X100 / 100.0f;
+
     // Feed T/RH compensation into ENS160
     esp_err_t ret = ens160_set_temp_hum(s_ens160, aht.temperature, aht.humidity);
     if (ret != ESP_OK) {
